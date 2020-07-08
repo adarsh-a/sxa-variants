@@ -8,11 +8,9 @@ using Sitecore.XA.Foundation.Abstractions.Configuration;
 using Sitecore.XA.Foundation.SitecoreExtensions.Extensions;
 using Sitecore.XA.Foundation.SitecoreExtensions.Repositories;
 using Sitecore.XA.Foundation.Variants.Abstractions.Pipelines.GetVariants;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 
-namespace sc_milka.sitecore.Pipeline
+namespace Axiom.SxaCustom.Variants.Pipeline
 {
     public class FilterVariants : GetVariantsBase
     {
@@ -20,26 +18,28 @@ namespace sc_milka.sitecore.Pipeline
 
         public FilterVariants(IContentRepository contentRepository)
         {
-            this.ContentRepository = contentRepository;
+            ContentRepository = contentRepository;
         }
 
         public void Process(GetVariantsArgs args)
         {
-            args.Variants = (IList<Item>)args.Variants.Where<Item>((Func<Item, bool>)(i => this.AllowedInTemplate(i, args.PageTemplateId))).Distinct<Item>((IEqualityComparer<Item>)new ItemIdComparer()).ToList<Item>();
+            args.Variants = args.Variants.Where(i => AllowedInTemplate(i, args.PageTemplateId)).Distinct(new ItemIdComparer()).ToList();
         }
 
         protected virtual bool AllowedInTemplate(Item item, string pageTemplateId)
         {
             Field field = item.Fields[Sitecore.XA.Foundation.Variants.Abstractions.Templates.IVariantDefinition.Fields.AllowedInTemplates];
-            if (field != null && (!(field.Value == string.Empty) || !this.InheritsFromAllowedTemplate(pageTemplateId)))
+            if (field != null && (!(field.Value == string.Empty) || !InheritsFromAllowedTemplate(pageTemplateId)))
                 return field.Value.Contains(pageTemplateId);
             return true;
         }
 
         protected virtual bool InheritsFromAllowedTemplate(string pageTemplateId)
         {
-            TemplateItem templateItem = this.ContentRepository.GetTemplate(new ID(pageTemplateId));
-            return ServiceProviderServiceExtensions.GetService<IConfiguration<Sitecore.XA.Foundation.Variants.Abstractions.VariantsConfiguration>>(ServiceLocator.ServiceProvider).GetConfiguration().AllowedTemplates.Any<ID>((Func<ID, bool>)(id => templateItem.DoesTemplateInheritFrom(id)));
+            TemplateItem templateItem = ContentRepository.GetTemplate(new ID(pageTemplateId));
+            return ServiceProviderServiceExtensions
+                .GetService<IConfiguration<Sitecore.XA.Foundation.Variants.Abstractions.VariantsConfiguration>>(ServiceLocator.ServiceProvider)
+                .GetConfiguration().AllowedTemplates.Any(id => templateItem.DoesTemplateInheritFrom(id));
         }
     }
 }
